@@ -6,17 +6,20 @@ module MiniSat
     # @yield [model]
     # @yieldparam [MiniSat::Model] model the model that satisfies given clauses.
     def each_model(&blk)
-      e = Enumerator.new do |y|
+      if blk
         while model = solve
-          y << model
+          blk.call model
           add_clause model.to_negative
         end
-      end
-      if blk
-        e.each &blk
       else
-        e
+        enumerator_class.new self, :each_model
       end
+    end
+
+    private
+
+    def enumerator_class
+      @enumerator_class ||= defined?(Enumerator) ? Enumerator : Enumerable::Enumerator
     end
   end
 end
