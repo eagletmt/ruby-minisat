@@ -1,5 +1,7 @@
 # MiniSat
 
+[![Build Status](https://secure.travis-ci.org/eagletmt/ruby-minisat.png)](https://travis-ci.org/eagletmt/ruby-minisat)
+
 Ruby binding for [MiniSat](http://minisat.se/).
 
 ## Installation
