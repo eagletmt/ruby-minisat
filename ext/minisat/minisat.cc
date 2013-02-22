@@ -234,7 +234,7 @@ VALUE minisat_var_to_lit(VALUE self)
 /*
  * call-seq: to_i
  *
- * Returns its index
+ * Returns its index (1-origin for DIMACS format)
  *
  * @return [Fixnum]
  */
@@ -242,7 +242,7 @@ VALUE minisat_var_to_i(VALUE self)
 {
   VarWrapper *v;
   Data_Get_Struct(self, VarWrapper, v);
-  return INT2FIX(Minisat::toInt(v->var));
+  return INT2FIX(Minisat::toInt(v->var) + 1);
 }
 
 /*

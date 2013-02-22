@@ -37,4 +37,21 @@ describe MiniSat::Lit do
       expect(v.to_lit).not_to eq(-v)
     end
   end
+
+  describe '#to_i' do
+    context 'when positive literal' do
+      it 'is same with #to_var.to_i' do
+        v = MiniSat::Var.new @solver
+        l = v.to_lit
+        expect(l.to_i).to eq(v.to_i)
+      end
+    end
+
+    context 'when negative literal' do
+      it 'returns negative index' do
+        v = MiniSat::Var.new @solver
+        expect((-v).to_i).to be < 0
+      end
+    end
+  end
 end

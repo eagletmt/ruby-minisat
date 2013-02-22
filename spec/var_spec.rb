@@ -29,10 +29,10 @@ describe MiniSat::Var do
   end
 
   describe '#to_i' do
-    it 'returns index' do
+    it 'returns 1-origin index' do
       v2 = MiniSat::Var.new @solver
-      expect(@var.to_i).to eq(0)
-      expect(v2.to_i).to eq(1)
+      expect(@var.to_i).to eq(1)
+      expect(v2.to_i).to eq(2)
     end
   end
 
