@@ -8,15 +8,11 @@ Ruby binding for [MiniSat](http://minisat.se/).
 
 Add this line to your application's Gemfile:
 
-    gem 'minisat'
+    gem 'minisat', :git => 'git://github.com/eagletmt/ruby-minisat.git'
 
 And then execute:
 
     $ bundle
-
-Or install it yourself as:
-
-    $ gem install minisat
 
 ## Usage
 
