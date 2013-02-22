@@ -8,5 +8,12 @@ module MiniSat
     def to_cnf
       [[self]]
     end
+
+    # Do Tseitin transformation
+    # @param [Solver] solver SAT solver for generating new variables
+    # @return [TseitinPair]
+    def tseitin(solver)
+      TseitinPair.new self, []
+    end
   end
 end

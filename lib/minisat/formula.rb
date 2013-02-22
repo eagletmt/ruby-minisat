@@ -21,6 +21,22 @@ module MiniSat
     end
   end
 
+  class TseitinPair
+    # @return [Var] variable introduced by Tseitin transformation
+    attr_reader :var
+    # @return [Array<Array<Lit>>] CNF formula encoded by Tseitin transformation
+    attr_reader :cnf
+    def initialize(var, cnf)
+      @var = var
+      @cnf = cnf
+    end
+
+    # @return [Array<Array<Lit>>]
+    def to_cnf
+      [[var]] + cnf
+    end
+  end
+
   class And
     include Formula
 
@@ -44,6 +60,16 @@ module MiniSat
     # @return [Array<Array<Lit>>]
     def to_cnf
       lhs.to_cnf + rhs.to_cnf
+    end
+
+    # Do Tseitin transformation
+    # @param [Solver] solver SAT solvervar
+    # @return [TseitinPair]
+    def tseitin(solver)
+      v = Var.new solver
+      l = lhs.tseitin solver
+      r = rhs.tseitin solver
+      TseitinPair.new(v, [[-v, l.var], [-v, r.var], [v, -l.var, -r.var]] + l.cnf + r.cnf)
     end
   end
 
@@ -76,6 +102,16 @@ module MiniSat
           l + r
         end
       end
+    end
+
+    # Do Tseitin transformation
+    # @param [Solver] solver SAT solvervar
+    # @return [Array<Array<Lit>>]
+    def tseitin(solver)
+      v = Var.new solver
+      l = lhs.tseitin solver
+      r = rhs.tseitin solver
+      TseitinPair.new(v, [[-v, l.var, r.var], [v, -l.var], [v, -r.var]] + l.cnf + r.cnf)
     end
   end
 end
