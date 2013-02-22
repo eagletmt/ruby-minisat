@@ -1,13 +1,16 @@
 describe MiniSat::Model do
+  before do
+    @solver = MiniSat::Solver.new
+    @v1 = MiniSat::Var.new @solver
+    @v2 = MiniSat::Var.new @solver
+  end
+
   it 'cannot be created by new' do
     expect { MiniSat::Model.new }.to raise_error(NoMethodError)
   end
 
   describe '#[]' do
     before do
-      @solver = MiniSat::Solver.new
-      @v1 = MiniSat::Var.new @solver
-      @v2 = MiniSat::Var.new @solver
       @solver << [@v1] << [-@v2]
       @model = @solver.solve
     end
@@ -40,9 +43,6 @@ describe MiniSat::Model do
 
   describe '#to_negative' do
     before do
-      @solver = MiniSat::Solver.new
-      @v1 = MiniSat::Var.new @solver
-      @v2 = MiniSat::Var.new @solver
       @solver << [@v1, @v2]
       @model = @solver.solve
     end
@@ -58,15 +58,22 @@ describe MiniSat::Model do
 
   describe '#size' do
     before do
-      @solver = MiniSat::Solver.new
-      @v1 = MiniSat::Var.new @solver
-      @v2 = MiniSat::Var.new @solver
       @solver << [@v2]
       @model = @solver.solve
     end
 
     it 'returns size' do
       expect(@model.size).to eq(2)
+    end
+  end
+
+  describe '#values_at' do
+    it 'acts like Array#values_at' do
+      @solver << [@v1] << [-@v2]
+      model = @solver.solve
+      expect(model.values_at @v2, @v1, -@v1, -@v2).to eq([false, true, false, true])
+      expect(model.values_at).to eq([])
+      expect { model.values_at @v1, 0 }.to raise_error(TypeError)
     end
   end
 end
