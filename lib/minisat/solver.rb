@@ -12,14 +12,8 @@ module MiniSat
           add_clause model.to_negative
         end
       else
-        enumerator_class.new self, :each_model
+        Enumerator.new self, :each_model
       end
-    end
-
-    private
-
-    def enumerator_class
-      @enumerator_class ||= defined?(Enumerator) ? Enumerator : Enumerable::Enumerator
     end
   end
 end

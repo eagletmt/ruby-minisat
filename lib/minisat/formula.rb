@@ -97,11 +97,11 @@ module MiniSat
     def to_cnf
       ls = lhs.to_cnf
       rs = rhs.to_cnf
-      ls.map do |l|
+      ls.flat_map do |l|
         rs.map do |r|
           l + r
         end
-      end.flatten(1)
+      end
     end
 
     # Do Tseitin transformation
