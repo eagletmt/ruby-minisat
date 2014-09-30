@@ -34,6 +34,7 @@ static VALUE minisat_solver_solve(VALUE self);
 
 static void minisat_var_mark(void *wrapper);
 static void minisat_var_free(void *wrapper);
+static size_t minisat_var_memsize(const void *wrapper);
 static VALUE minisat_var_alloc(VALUE klass);
 static VALUE minisat_var_initialize(VALUE self, VALUE solver);
 static VALUE minisat_var_to_lit(VALUE self);
@@ -55,6 +56,11 @@ static VALUE minisat_model_ref(VALUE self, VALUE var);
 static VALUE minisat_model_size(VALUE self);
 static VALUE minisat_model_to_negative(VALUE self);
 
+static const rb_data_type_t minisat_var_type = {
+  "minisat_var",
+  { minisat_var_mark, minisat_var_free, minisat_var_memsize, },
+  NULL, NULL,
+};
 static const rb_data_type_t minisat_lit_type = {
   "minisat_lit",
   { minisat_lit_mark, minisat_lit_free, minisat_lit_memsize, },
@@ -62,7 +68,7 @@ static const rb_data_type_t minisat_lit_type = {
 };
 
 static inline bool solver_type_p(VALUE v) { return TYPE(v) == T_DATA && RDATA(v)->dfree == minisat_solver_free; }
-static inline bool var_type_p(VALUE v) { return TYPE(v) == T_DATA && RDATA(v)->dfree == minisat_var_free; }
+static inline bool var_type_p(VALUE v) { return TYPE(v) == T_DATA && RTYPEDDATA_TYPE(v) == &minisat_var_type; }
 static inline bool lit_type_p(VALUE v) { return TYPE(v) == T_DATA && RTYPEDDATA_TYPE(v) == &minisat_lit_type; }
 
 static inline VALUE lbool2value(Minisat::lbool b) {
@@ -126,7 +132,7 @@ VALUE minisat_solver_add_clause(VALUE self, VALUE lits)
   for (int i = 0; i < len; i++) {
     if (var_type_p(ary[i])) {
       VarWrapper *v;
-      Data_Get_Struct(ary[i], VarWrapper, v);
+      TypedData_Get_Struct(ary[i], VarWrapper, &minisat_var_type, v);
       check_solver(self, v->solver, ary[i]);
       Minisat::Lit lit = Minisat::mkLit(v->var);
       c.push(lit);
@@ -195,11 +201,20 @@ void minisat_var_free(void *wrapper)
   free(wrapper);
 }
 
+size_t minisat_var_memsize(const void *wrapper)
+{
+  if (wrapper) {
+    return sizeof(VarWrapper);
+  } else {
+    return 0;
+  }
+}
+
 VALUE minisat_var_alloc(VALUE klass)
 {
   VarWrapper *v = ALLOC(VarWrapper);
   v->solver = Qnil;
-  return Data_Wrap_Struct(klass, minisat_var_mark, minisat_var_free, v);
+  return TypedData_Wrap_Struct(klass, &minisat_var_type, v);
 }
 
 /*
@@ -213,7 +228,7 @@ VALUE minisat_var_alloc(VALUE klass)
 VALUE minisat_var_initialize(VALUE self, VALUE solver)
 {
   VarWrapper *v;
-  Data_Get_Struct(self, VarWrapper, v);
+  TypedData_Get_Struct(self, VarWrapper, &minisat_var_type, v);
   if (!solver_type_p(solver)) {
     rb_raise(rb_eTypeError, "%s: not a MiniSat::Solver", rb_obj_classname(solver));
   }
@@ -234,7 +249,7 @@ VALUE minisat_var_initialize(VALUE self, VALUE solver)
 VALUE minisat_var_to_lit(VALUE self)
 {
   VarWrapper *v;
-  Data_Get_Struct(self, VarWrapper, v);
+  TypedData_Get_Struct(self, VarWrapper, &minisat_var_type, v);
   return new_lit(Minisat::mkLit(v->var), v->solver);
 }
 
@@ -248,7 +263,7 @@ VALUE minisat_var_to_lit(VALUE self)
 VALUE minisat_var_to_i(VALUE self)
 {
   VarWrapper *v;
-  Data_Get_Struct(self, VarWrapper, v);
+  TypedData_Get_Struct(self, VarWrapper, &minisat_var_type, v);
   return INT2FIX(Minisat::toInt(v->var) + 1);
 }
 
@@ -265,8 +280,8 @@ VALUE minisat_var_eq(VALUE self, VALUE arg)
     return Qfalse;
   }
   VarWrapper *v1, *v2;
-  Data_Get_Struct(self, VarWrapper, v1);
-  Data_Get_Struct(arg, VarWrapper, v2);
+  TypedData_Get_Struct(self, VarWrapper, &minisat_var_type, v1);
+  TypedData_Get_Struct(arg, VarWrapper, &minisat_var_type, v2);
   if (v1->var == v2->var) {
     return Qtrue;
   } else {
@@ -329,7 +344,7 @@ VALUE minisat_lit_to_var(VALUE self)
   VarWrapper *v = ALLOC(VarWrapper);
   v->var = Minisat::var(l->lit);
   v->solver = l->solver;
-  return Data_Wrap_Struct(rb_cVar, minisat_var_mark, minisat_var_free, v);
+  return TypedData_Wrap_Struct(rb_cVar, &minisat_var_type, v);
 }
 
 /*
@@ -416,7 +431,7 @@ VALUE minisat_model_ref(VALUE self, VALUE var)
 
   if (var_type_p(var)) {
     VarWrapper *v;
-    Data_Get_Struct(var, VarWrapper, v);
+    TypedData_Get_Struct(var, VarWrapper, &minisat_var_type, v);
     check_solver(model->solver, v->solver, var);
     return lbool2value(model->ary[v->var]);
   } else if (lit_type_p(var)) {
