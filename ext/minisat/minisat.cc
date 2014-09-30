@@ -42,6 +42,7 @@ static VALUE minisat_var_eq(VALUE self, VALUE arg);
 
 static void minisat_lit_mark(void *wrapper);
 static void minisat_lit_free(void *wrapper);
+static size_t minisat_lit_memsize(const void *wrapper);
 static VALUE minisat_lit_positive_p(VALUE self);
 static VALUE minisat_lit_to_var(VALUE self);
 static VALUE minisat_lit_negative_p(VALUE self);
@@ -54,9 +55,15 @@ static VALUE minisat_model_ref(VALUE self, VALUE var);
 static VALUE minisat_model_size(VALUE self);
 static VALUE minisat_model_to_negative(VALUE self);
 
+static const rb_data_type_t minisat_lit_type = {
+  "minisat_lit",
+  { minisat_lit_mark, minisat_lit_free, minisat_lit_memsize, },
+  NULL, NULL,
+};
+
 static inline bool solver_type_p(VALUE v) { return TYPE(v) == T_DATA && RDATA(v)->dfree == minisat_solver_free; }
 static inline bool var_type_p(VALUE v) { return TYPE(v) == T_DATA && RDATA(v)->dfree == minisat_var_free; }
-static inline bool lit_type_p(VALUE v) { return TYPE(v) == T_DATA && RDATA(v)->dfree == minisat_lit_free; }
+static inline bool lit_type_p(VALUE v) { return TYPE(v) == T_DATA && RTYPEDDATA_TYPE(v) == &minisat_lit_type; }
 
 static inline VALUE lbool2value(Minisat::lbool b) {
   using Minisat::lbool;
@@ -81,7 +88,7 @@ static VALUE new_lit(const Minisat::Lit& lit, VALUE solver)
   LitWrapper *l = ALLOC(LitWrapper);
   l->lit = lit;
   l->solver = solver;
-  return Data_Wrap_Struct(rb_cLit, minisat_lit_mark, minisat_lit_free, l);
+  return TypedData_Wrap_Struct(rb_cLit, &minisat_lit_type, l);
 }
 
 /*
@@ -125,7 +132,7 @@ VALUE minisat_solver_add_clause(VALUE self, VALUE lits)
       c.push(lit);
     } else if (lit_type_p(ary[i])) {
       LitWrapper *l;
-      Data_Get_Struct(ary[i], LitWrapper, l);
+      TypedData_Get_Struct(ary[i], LitWrapper, &minisat_lit_type, l);
       check_solver(self, l->solver, ary[i]);
       c.push(l->lit);
     } else {
@@ -283,6 +290,15 @@ void minisat_lit_free(void *wrapper)
   free(wrapper);
 }
 
+size_t minisat_lit_memsize(const void *wrapper)
+{
+  if (wrapper) {
+    return sizeof(LitWrapper);
+  } else {
+    return 0;
+  }
+}
+
 /*
  * call-seq: positive?
  *
@@ -291,7 +307,7 @@ void minisat_lit_free(void *wrapper)
 VALUE minisat_lit_positive_p(VALUE self)
 {
   LitWrapper *l;
-  Data_Get_Struct(self, LitWrapper, l);
+  TypedData_Get_Struct(self, LitWrapper, &minisat_lit_type, l);
   if (Minisat::sign(l->lit)) {
     return Qfalse;
   } else {
@@ -309,7 +325,7 @@ VALUE minisat_lit_positive_p(VALUE self)
 VALUE minisat_lit_to_var(VALUE self)
 {
   LitWrapper *l;
-  Data_Get_Struct(self, LitWrapper, l);
+  TypedData_Get_Struct(self, LitWrapper, &minisat_lit_type, l);
   VarWrapper *v = ALLOC(VarWrapper);
   v->var = Minisat::var(l->lit);
   v->solver = l->solver;
@@ -324,7 +340,7 @@ VALUE minisat_lit_to_var(VALUE self)
 VALUE minisat_lit_negative_p(VALUE self)
 {
   LitWrapper *l;
-  Data_Get_Struct(self, LitWrapper, l);
+  TypedData_Get_Struct(self, LitWrapper, &minisat_lit_type, l);
   if (Minisat::sign(l->lit)) {
     return Qtrue;
   } else {
@@ -342,7 +358,7 @@ VALUE minisat_lit_negative_p(VALUE self)
 VALUE minisat_lit_neg(VALUE self)
 {
   LitWrapper *l1, *l2;
-  Data_Get_Struct(self, LitWrapper, l1);
+  TypedData_Get_Struct(self, LitWrapper, &minisat_lit_type, l1);
   return new_lit(~l1->lit, l1->solver);
 }
 
@@ -359,8 +375,8 @@ VALUE minisat_lit_eq(VALUE self, VALUE arg)
     return Qfalse;
   }
   LitWrapper *l1, *l2;
-  Data_Get_Struct(self, LitWrapper, l1);
-  Data_Get_Struct(arg, LitWrapper, l2);
+  TypedData_Get_Struct(self, LitWrapper, &minisat_lit_type, l1);
+  TypedData_Get_Struct(arg, LitWrapper, &minisat_lit_type, l2);
   if (l1->lit == l2->lit) {
     return Qtrue;
   } else {
@@ -405,7 +421,7 @@ VALUE minisat_model_ref(VALUE self, VALUE var)
     return lbool2value(model->ary[v->var]);
   } else if (lit_type_p(var)) {
     LitWrapper *l;
-    Data_Get_Struct(var, LitWrapper, l);
+    TypedData_Get_Struct(var, LitWrapper, &minisat_lit_type, l);
     check_solver(model->solver, l->solver, var);
     return lbool2value(model->ary[Minisat::var(l->lit)] ^ Minisat::sign(l->lit));
   } else {
