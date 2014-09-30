@@ -12,7 +12,7 @@ module MiniSat
           add_clause model.to_negative
         end
       else
-        Enumerator.new self, :each_model
+        to_enum(:each_model)
       end
     end
   end
