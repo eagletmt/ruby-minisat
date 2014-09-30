@@ -29,6 +29,7 @@ struct Model
 
 static VALUE minisat_solver_alloc(VALUE klass);
 static void minisat_solver_free(void *solver);
+static size_t minisat_solver_memsize(const void *solver);
 static VALUE minisat_solver_add_clause(VALUE self, VALUE lits);
 static VALUE minisat_solver_solve(VALUE self);
 
@@ -56,6 +57,11 @@ static VALUE minisat_model_ref(VALUE self, VALUE var);
 static VALUE minisat_model_size(VALUE self);
 static VALUE minisat_model_to_negative(VALUE self);
 
+static const rb_data_type_t minisat_solver_type = {
+  "minisat_solver",
+  { NULL, minisat_solver_free, minisat_solver_memsize, },
+  NULL, NULL,
+};
 static const rb_data_type_t minisat_var_type = {
   "minisat_var",
   { minisat_var_mark, minisat_var_free, minisat_var_memsize, },
@@ -67,7 +73,7 @@ static const rb_data_type_t minisat_lit_type = {
   NULL, NULL,
 };
 
-static inline bool solver_type_p(VALUE v) { return TYPE(v) == T_DATA && RDATA(v)->dfree == minisat_solver_free; }
+static inline bool solver_type_p(VALUE v) { return TYPE(v) == T_DATA && RTYPEDDATA_TYPE(v) == &minisat_solver_type; }
 static inline bool var_type_p(VALUE v) { return TYPE(v) == T_DATA && RTYPEDDATA_TYPE(v) == &minisat_var_type; }
 static inline bool lit_type_p(VALUE v) { return TYPE(v) == T_DATA && RTYPEDDATA_TYPE(v) == &minisat_lit_type; }
 
@@ -108,11 +114,20 @@ void minisat_solver_free(void *solver)
   delete static_cast<Minisat::Solver *>(solver);
 }
 
+size_t minisat_solver_memsize(const void *solver)
+{
+  if (solver) {
+    return sizeof(Minisat::Solver);
+  } else {
+    return 0;
+  }
+}
+
 VALUE minisat_solver_alloc(VALUE klass)
 {
   Minisat::Solver *solver = ALLOC(Minisat::Solver);
   new (solver) Minisat::Solver;
-  return Data_Wrap_Struct(klass, NULL, minisat_solver_free, solver);
+  return TypedData_Wrap_Struct(klass, &minisat_solver_type, solver);
 }
 
 /*
@@ -147,7 +162,7 @@ VALUE minisat_solver_add_clause(VALUE self, VALUE lits)
   }
 
   Minisat::Solver *solver;
-  Data_Get_Struct(self, Minisat::Solver, solver);
+  TypedData_Get_Struct(self, Minisat::Solver, &minisat_solver_type, solver);
   solver->addClause_(c);
   return self;
 }
@@ -166,7 +181,7 @@ VALUE minisat_solver_solve(VALUE self)
   using Minisat::lbool;
 
   Minisat::Solver *solver;
-  Data_Get_Struct(self, Minisat::Solver, solver);
+  TypedData_Get_Struct(self, Minisat::Solver, &minisat_solver_type, solver);
   if (!solver->simplify()) {
     return Qfalse;
   }
@@ -233,7 +248,7 @@ VALUE minisat_var_initialize(VALUE self, VALUE solver)
     rb_raise(rb_eTypeError, "%s: not a MiniSat::Solver", rb_obj_classname(solver));
   }
   Minisat::Solver *s;
-  Data_Get_Struct(solver, Minisat::Solver, s);
+  TypedData_Get_Struct(solver, Minisat::Solver, &minisat_solver_type, s);
   v->var = s->newVar();
   v->solver = solver;
   return self;
