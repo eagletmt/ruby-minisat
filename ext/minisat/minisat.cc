@@ -393,9 +393,9 @@ VALUE minisat_lit_negative_p(VALUE self)
  */
 VALUE minisat_lit_neg(VALUE self)
 {
-  LitWrapper *l1, *l2;
-  TypedData_Get_Struct(self, LitWrapper, &minisat_lit_type, l1);
-  return new_lit(~l1->lit, l1->solver);
+  LitWrapper *l;
+  TypedData_Get_Struct(self, LitWrapper, &minisat_lit_type, l);
+  return new_lit(~l->lit, l->solver);
 }
 
 /*
