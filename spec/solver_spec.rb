@@ -64,7 +64,7 @@ describe MiniSat::Solver do
         expect(model).to be_a(MiniSat::Model)
         a << [@v1, @v2].map { |v| model[v] }
       end
-      expect(a).to have(3).items
+      expect(a.size).to eq(3)
       expect(a).to include([true, true])
       expect(a).to include([true, false])
       expect(a).to include([false, true])

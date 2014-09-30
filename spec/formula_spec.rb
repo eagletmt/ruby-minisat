@@ -28,7 +28,7 @@ describe MiniSat::Formula do
 
       pair = formula.tseitin @solver
       expect(pair).to be_a(MiniSat::TseitinPair)
-      expect(pair.cnf).to have(3*(3-1)).items  # 3*(NUMBER_OF_LITERALS - 1)
+      expect(pair.cnf.size).to eq(3*(3-1))  # 3*(NUMBER_OF_LITERALS - 1)
       cnf = pair.to_cnf
       expect do
         cnf.each do |clause|

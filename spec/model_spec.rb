@@ -16,15 +16,15 @@ describe MiniSat::Model do
     end
 
     it 'accepts MiniSat::Var' do
-      expect(@model[@v1]).to be_true
-      expect(@model[@v2]).to be_false
+      expect(@model[@v1]).to eq(true)
+      expect(@model[@v2]).to eq(false)
     end
 
     it 'accepts MiniSat::Lit' do
-      expect(@model[@v1.to_lit]).to be_true
-      expect(@model[-@v1]).to be_false
-      expect(@model[@v2.to_lit]).to be_false
-      expect(@model[-@v2]).to be_true
+      expect(@model[@v1.to_lit]).to eq(true)
+      expect(@model[-@v1]).to eq(false)
+      expect(@model[@v2.to_lit]).to eq(false)
+      expect(@model[-@v2]).to eq(true)
     end
 
     it 'rejects others' do
@@ -50,7 +50,7 @@ describe MiniSat::Model do
     it 'returns negative clause' do
       clause = @model.to_negative
       expect(clause).to be_a(Array)
-      expect(clause).to have(2).items
+      expect(clause.size).to eq(2)
       expect(clause[0].to_var).to eq(@v1)
       expect(clause[1].to_var).to eq(@v2)
     end
