@@ -53,6 +53,7 @@ static VALUE minisat_lit_eq(VALUE self, VALUE arg);
 
 static void minisat_model_mark(void *model);
 static void minisat_model_free(void *model);
+static size_t minisat_model_memsize(const void *model);
 static VALUE minisat_model_ref(VALUE self, VALUE var);
 static VALUE minisat_model_size(VALUE self);
 static VALUE minisat_model_to_negative(VALUE self);
@@ -70,6 +71,11 @@ static const rb_data_type_t minisat_var_type = {
 static const rb_data_type_t minisat_lit_type = {
   "minisat_lit",
   { minisat_lit_mark, minisat_lit_free, minisat_lit_memsize, },
+  NULL, NULL,
+};
+static const rb_data_type_t minisat_model_type = {
+  "minisat_model",
+  { minisat_model_mark, minisat_model_free, minisat_model_memsize, },
   NULL, NULL,
 };
 
@@ -197,7 +203,7 @@ VALUE minisat_solver_solve(VALUE self)
   for (int i = 0; i < model->size; i++) {
     model->ary[i] = solver->model[i];
   }
-  return Data_Wrap_Struct(rb_cModel, minisat_model_mark, minisat_model_free, model);
+  return TypedData_Wrap_Struct(rb_cModel, &minisat_model_type, model);
 }
 
 /* Document-class: MiniSat::Var
@@ -431,6 +437,15 @@ void minisat_model_free(void *model)
   free(model);
 }
 
+size_t minisat_model_memsize(const void *model)
+{
+  if (model) {
+    return sizeof(Model);
+  } else {
+    return 0;
+  }
+}
+
 /*
  * call-seq: [](var_or_lit)
  *
@@ -442,7 +457,7 @@ void minisat_model_free(void *model)
 VALUE minisat_model_ref(VALUE self, VALUE var)
 {
   Model *model;
-  Data_Get_Struct(self, Model, model);
+  TypedData_Get_Struct(self, Model, &minisat_model_type, model);
 
   if (var_type_p(var)) {
     VarWrapper *v;
@@ -469,7 +484,7 @@ VALUE minisat_model_ref(VALUE self, VALUE var)
 VALUE minisat_model_size(VALUE self)
 {
   Model *model;
-  Data_Get_Struct(self, Model, model);
+  TypedData_Get_Struct(self, Model, &minisat_model_type, model);
   return INT2FIX(model->size);
 }
 
@@ -486,7 +501,7 @@ VALUE minisat_model_to_negative(VALUE self)
   using Minisat::lbool;
 
   Model *model;
-  Data_Get_Struct(self, Model, model);
+  TypedData_Get_Struct(self, Model, &minisat_model_type, model);
 
   VALUE ary = rb_ary_new2(model->size);
   for (int i = 0; i < model->size; i++) {
