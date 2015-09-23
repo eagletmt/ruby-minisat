@@ -6,12 +6,13 @@ require 'minisat/version'
 Gem::Specification.new do |gem|
   gem.name          = "minisat"
   gem.version       = MiniSat::VERSION
-  gem.authors       = ["eagletmt"]
+  gem.authors       = ["Kohei Suzuki"]
   gem.email         = ["eagletmt@gmail.com"]
   gem.summary       = 'Ruby binding for MiniSat'
   gem.description   = gem.summary
-  gem.homepage      = ""
+  gem.homepage      = "https://github.com/eagletmt/ruby-minisat"
   gem.licenses      = 'MIT'
+  gem.required_ruby_version = ">= 2.0.0"
 
   gem.add_development_dependency 'rspec', '>= 3.0.0'
   gem.add_development_dependency 'rake-compiler'
